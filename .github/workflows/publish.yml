@@ -66,8 +66,8 @@ jobs:
           sudo add-apt-repository -y ppa:flatpak/stable
           sudo add-apt-repository ppa:longsleep/golang-backports -y
           sudo apt install -y libgirepository1.0-dev flatpak flatpak-builder build-essential devscripts debhelper dh-make golang libadwaita-1-dev
-          flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          flatpak remote-add --if-not-exists flathub-beta https://flathub.org/beta-repo/flathub-beta.flatpakrepo
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak remote-add --user --if-not-exists flathub-beta https://flathub.org/beta-repo/flathub-beta.flatpakrepo
           flatpak install -y flathub org.flatpak.Builder
       - name: 📦 Install Dependencies
         run: |
