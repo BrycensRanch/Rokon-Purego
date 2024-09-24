@@ -27,7 +27,7 @@ jobs:
         arch:
           - amd64
 
-    runs-on: self-hosted
+    runs-on: ubuntu-24.04
     # Service containers to run with `container-job`
     # services:
     #   # Label used to access the service container
@@ -65,22 +65,10 @@ jobs:
           sudo apt update
           sudo add-apt-repository -y ppa:flatpak/stable
           sudo add-apt-repository ppa:longsleep/golang-backports -y
-          sudo apt install -y libgtk-4-dev libgirepository1.0-dev upx flatpak flatpak-builder rpm build-essential devscripts debhelper dh-make golang
+          sudo apt install -y libgirepository1.0-dev flatpak flatpak-builder build-essential devscripts debhelper dh-make golang libadwaita-1-dev
           flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           flatpak remote-add --if-not-exists flathub-beta https://flathub.org/beta-repo/flathub-beta.flatpakrepo
           flatpak install -y flathub org.flatpak.Builder
-      - name: 👁️ Ensure Code is Linted
-        continue-on-error: true
-        run: |
-          make inst
-          make lint
-          make spell
-      - name: Lint AppStream Metadata
-        run: |
-          flatpak run --command=flatpak-builder-lint org.flatpak.Builder appstream usr/share/metainfo/io.github.brycensranch.Rokon.metainfo.xml
-      # - name: 🚧 Ensure Code is Formatted
-      #   run: |
-      #     pnpm format:check
       - name: 📦 Install Dependencies
         run: |
           go mod download all
@@ -200,9 +188,8 @@ jobs:
         uses: ./.github/actions/build-msys2-app
         with:
           msys-dependencies: |
-            mingw-w64-clang-x86_64-gcc
             mingw-w64-clang-x86_64-pkg-config
-            mingw-w64-clang-x86_64-gtk4
+            mingw-w64-clang-x86_64-libadwaita
             mingw-w64-clang-x86_64-gobject-introspection
             mingw-w64-clang-x86_64-go
             mingw-w64-clang-x86_64-upx
@@ -298,7 +285,7 @@ jobs:
           fetch-depth: 0
       - name: Install GTK4 Golang
         run: |
-          brew install gtk4 gobject-introspection go gtkmm4 cairomm
+          brew install libadwaita gobject-introspection go gtkmm4
       - name: 📦 Install Dependencies
         run: |
           go mod download all

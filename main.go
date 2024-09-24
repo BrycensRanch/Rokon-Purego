@@ -11,9 +11,10 @@ import (
 
 	"github.com/brycensranch/go-aptabase/pkg/aptabase/v1"
 	"github.com/brycensranch/go-aptabase/pkg/osinfo/v1"
-	"github.com/diamondburned/gotk4/pkg/gio/v2"
-	"github.com/diamondburned/gotk4/pkg/gtk/v4"
+
 	"github.com/getsentry/sentry-go"
+	"github.com/jwijenbergh/puregotk/v4/gio"
+	"github.com/jwijenbergh/puregotk/v4/gtk"
 )
 
 var aptabaseClient *aptabase.Client // Package-level variable
@@ -40,7 +41,7 @@ func createEvent(eventName string, eventData map[string]interface{}) aptabase.Ev
 }
 
 func main() {
-	version := "0.0.0-SNAPSHOT"
+	version := "0.0.0-PUREGO"
 	isPackaged := "false"
 	packageFormat := "native"
 
@@ -71,10 +72,9 @@ func main() {
 		log.Fatalf("sentry.Init: %s", err)
 	}
 	aptabaseClient = aptabase.NewClient("A-US-0332858461", version, uint64(133), true, "")
-	app := gtk.NewApplication("io.github.brycensranch.Rokon", gio.ApplicationDefaultFlags)
-	if version == "" {
-		app.SetVersion(version)
-	}
+	app := gtk.NewApplication("io.github.brycensranch.Rokon", gio.GApplicationFlagsNoneValue)
+	// cleanup, no finalizers are used in this library
+	defer app.Unref()
 	switch runtime.GOOS {
 	case "linux":
 		release := getOSRelease()
@@ -168,33 +168,20 @@ func main() {
 			"path":     os.Args[0],
 		})
 	}
-	app.ConnectActivate(func() { activate(app) })
-	app.ConnectCommandLine(func(commandLine *gio.ApplicationCommandLine) int {
-		return activateCommandLine(app, commandLine)
-	})
+	// functions with callback arguments take function pointers
+	// this is for internal re-use of callbacks
+	actcb := func(_ gio.Application) {
+		activate(app)
+	}
+	app.ConnectActivate(&actcb)
 	// Flush buffered events before the program terminates.
 	// Set the timeout to the maximum duration the program can afford to wait.
 	defer sentry.Flush(2 * time.Second)
 	aptabaseClient.Quit = true
 	aptabaseClient.Stop()
-	if code := app.Run(os.Args); code > 0 {
+	if code := app.Run(len(os.Args), os.Args); code > 0 {
 		os.Exit(code)
 	}
-}
-
-func activateCommandLine(app *gtk.Application, commandLine *gio.ApplicationCommandLine) int {
-	args := commandLine.Arguments() // Get the command-line arguments
-	// Check if --version flag is present
-	for _, arg := range args {
-		if arg == "version" || arg == "--version" {
-			// Print version info
-			// commandLine.PrintLiteral("Now exiting")
-			fmt.Println(applicationInfo(app))
-			return 0 // Return 0 to indicate success
-		}
-	}
-	commandLine.PrintLiteral("HI FROM COMMAND LINE RAHH")
-	return 0 // or return another integer if needed
 }
 
 func applicationInfo(app *gtk.Application) string {
@@ -212,7 +199,7 @@ func applicationInfo(app *gtk.Application) string {
 			return ""
 		}
 	}()
-	return fmt.Sprintf("Rokon %s%s", app.Version(), qualifier)
+	return fmt.Sprintf("Rokon %s%s", "0.0.0-PUREGO", qualifier)
 }
 
 func activate(app *gtk.Application) {
@@ -221,7 +208,7 @@ func activate(app *gtk.Application) {
 	window.SetChild(&gtk.NewLabel("Hello from Go!").Widget)
 	aboutWindow := gtk.NewAboutDialog()
 	aboutWindow.SetProgramName(applicationInfo(app))
-	aboutWindow.SetVersion(app.Version())
+	aboutWindow.SetVersion("0.0.0-PUREGO")
 	aboutWindow.SetComments("Control your Roku TV from your desktop")
 	aboutWindow.SetWebsite("https://github.com/BrycensRanch/Rokon")
 	aboutWindow.SetWebsiteLabel("GitHub")
@@ -236,7 +223,7 @@ func activate(app *gtk.Application) {
 	case os.Getenv("SNAP") != "":
 		image := gtk.NewImageFromFile(os.Getenv("SNAP") + "/meta/gui/icon.png")
 		if image != nil {
-			logo := image.Paintable()
+			logo := image.GetPaintable()
 			if logo != nil {
 				aboutWindow.SetLogo(logo)
 			}
@@ -244,7 +231,7 @@ func activate(app *gtk.Application) {
 	case os.Getenv("FLATPAK") != "":
 		image := gtk.NewImageFromFile("/app/share/icons/hicolor/256x256/apps/io.github.brycensranch.Rokon.png")
 		if image != nil {
-			logo := image.Paintable()
+			logo := image.GetPaintable()
 			if logo != nil {
 				aboutWindow.SetLogo(logo)
 			}
@@ -262,11 +249,10 @@ func activate(app *gtk.Application) {
 	// err := fmt.Errorf("something went wrong!")
 	// sentry.CaptureException(err)
 	// aboutWindow.SetAuthors([]string{"Brycen G. (BrycensRanch)"})
-	aboutWindow.SetLicenseType(gtk.LicenseAGPL30)
+	aboutWindow.SetLicenseType(gtk.LicenseAgpl30Value)
 	// window.SetChild(&aboutWindow.Window)
 
 	aboutWindow.Present()
-	aboutWindow.Focus()
 	const windowSize = 400
 	window.SetDefaultSize(windowSize, windowSize)
 	// set window position to center
