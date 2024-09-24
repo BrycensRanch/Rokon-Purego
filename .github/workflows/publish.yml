@@ -100,13 +100,13 @@ jobs:
           sudo apt install -y binutils coreutils desktop-file-utils fakeroot libgdk-pixbuf2.0-dev patchelf python3-pip python3-setuptools squashfs-tools strace util-linux zsync
           make fatimage
           mv *.AppImage ..
-      - name: 🤠 Assemble the DEB
-        run: |
-          debuild -i -I -d
-          # Clean up any previous builds
-          rm -rf build debian/build
-          # Move the DEB files to the root of the repository
-          mv ../*.deb .
+      # - name: 🤠 Assemble the DEB
+      #   run: |
+      #     debuild -i -I -d
+      #     # Clean up any previous builds
+      #     rm -rf build debian/build
+      #     # Move the DEB files to the root of the repository
+      #     mv ../*.deb .
       - name: Install Snapcraft
         uses: samuelmeuli/action-snapcraft@v2
       - name: 🫰 Assemble the Snap
